@@ -23,28 +23,87 @@ var express = require( 'express' )
         ,httpsServer = https.createServer( {
                 cert: sslCertificate
                 ,key: sslKey
-        }, application );
+        }, application )
+        // Prepare swagger, as per:
+        // https://github.com/wordnik/swagger-node-express/blob/master/README.md
+        ,url = require("url")
+        ,swagger = require("swagger-node-express");
+
+// Prepare application requirements.
+application.use( express.json() );
+application.use( express.urlencoded() );
+
+// Register application, as part of swagger.
+swagger.setAppHandler( application );
+
+// Record read description.
+var getRecordById = {
+        'spec': {
+                "description": "Single record read operation."
+                ,"path": "/record/{id}"
+                ,"notes": "Returns a record by id."
+                ,"summary": "Find record by id."
+                ,"method": "GET"
+                ,"parameters": [ swagger.pathParam( "id", "Id of the record to return.", "integer") ]
+                ,"type": "Record"
+                ,"errorResponses": [
+                        swagger.errors.invalid( 'id' )
+                        ,swagger.errors.notFound( 'Record' )
+                ]
+                ,"responseClass": "Record"
+                ,"nickname": "getRecordById"
+        },
+        'action': function ( request, response ) {
+                // Validate input parameters.
+                if ( !request.params.petId ) {
+                        throw swagger.errors.invalid( 'id' );
+                }
+
+                // Get id, and record data.
+                var id = parseInt( req.params.petId )
+                        ,record = {}; // TODO: Get from memcache of if not found, from mongo.
+
+                // Prepare response.
+                if ( record ) {
+                        response.send( JSON.stringify( record ) );
+                } else {
+                        throw swagger.errors.notFound( 'Record' );
+                }
+        }
+};
+
+// Create record model.
+Models = {
+        "Record": {
+                "id": "Record"
+                ,"description": "A patient's record."
+                ,"required": [
+                        "id"
+                ]
+                ,"properties": {
+                        "name": {
+                                "type": "string"
+                        }
+                        ,"id": {
+                                "type": "integer"
+                                ,"format": "int64"
+                        }
+                }
+        }
+};
+
+// Register model.
+swagger.addModels( Models );
+// Register handler.
+swagger.addGet( getRecordById );
+
+// Configure path, API url and version.
+swagger.configureSwaggerPaths( "", "/api", "" );
+swagger.configure( "http://localhost", "0.1" );
 
 // Define allowed methods, and handlers.
 /** Create. */
-application.put( '/record/', function( request, response ) {
-        // TODO: Implement.
-} );
-
-/** Read. */
-application.get( '/record/:id', function( request, response ) {
-        // TODO: Implement.
-} );
-
-/** Update. */
-application.post( '/record/:id', function( request, response ) {
-        // TODO: Implement.
-} );
-
-/** Delete. */
-application.delete( '/record/:id', function( request, response ) {
-        // TODO: Implement.
-} );
+application.put( '/record/', getRecordById.action );
 
 // Bind listener, on default port 443.
 try {
