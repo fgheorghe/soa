@@ -44,7 +44,7 @@ var getRecordById = {
                 ,"notes": "Returns a record by id."
                 ,"summary": "Find record by id."
                 ,"method": "GET"
-                ,"parameters": [ swagger.pathParam( "id", "Id of the record to return.", "integer") ]
+                ,"parameters": [ swagger.pathParam( "id", "Id of the record to return.", "integer" ) ]
                 ,"type": "Record"
                 ,"errorResponses": [
                         swagger.errors.invalid( 'id' )
