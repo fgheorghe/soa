@@ -55,20 +55,36 @@ var getRecordById = {
         },
         'action': function ( request, response ) {
                 // Validate input parameters.
-                if ( !request.params.petId ) {
+                if ( !request.params.id ) {
                         throw swagger.errors.invalid( 'id' );
                 }
 
                 // Get id, and record data.
-                var id = parseInt( req.params.petId )
+                var id = parseInt( request.params.id )
                         ,record = {}; // TODO: Get from memcache of if not found, from mongo.
 
-                // Prepare response.
-                if ( record ) {
-                        response.send( JSON.stringify( record ) );
-                } else {
-                        throw swagger.errors.notFound( 'Record' );
-                }
+                // As per: http://mongoosejs.com/docs/index.html
+                var mongoose = require( 'mongoose' );
+                mongoose.connect( 'mongodb://localhost/medical' );
+
+                // Attach open event.
+                mongoose.connection.once( 'open', function() {
+                        console.log( id );
+                        var recordSchema = new mongoose.Schema( {
+                                        name: String
+                                        ,id: Number
+                                } )
+                                ,recordModel = mongoose.model( 'records', recordSchema );
+
+                        var record = recordModel.find( { id: id }, function( error, record ) {
+                                // Prepare response.
+                                if ( !error && record ) {
+                                        response.send( JSON.stringify( { id: record[0].id, name: record[0].name } ) );
+                                } else {
+                                        throw swagger.errors.notFound( 'Record' );
+                                }
+                        } );
+                } );
         }
 };
 
