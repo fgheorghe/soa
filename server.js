@@ -1,26 +1,31 @@
+// Configuration - enable or disable SSL, testing. Some ESBs will not accept an invalid certificate.
+var disableSSL = true;
+
 // Prepare filesystem library.
 var fs = require( 'fs' );
 
 // Load SSL certificate.
-try {
-        // Read UTF8 encoded data.
-        var sslCertificate = fs.readFileSync( "cert/medical.crt", "utf8" )
-                ,sslKey = fs.readFileSync( "cert/medical.key", "utf8" );
-} catch ( Exception ) {
-        // Failed loading certificate, notify user.
-        console.log( "Can not load SSL certificate: "
-                                + Exception.message );
-        // Abort execution.
-        process.exit();
+if ( !disableSSL ) {
+	try {
+        	// Read UTF8 encoded data.
+	        var sslCertificate = fs.readFileSync( "cert/medical.crt", "utf8" )
+        	        ,sslKey = fs.readFileSync( "cert/medical.key", "utf8" );
+	} catch ( Exception ) {
+        	// Failed loading certificate, notify user.
+	        console.log( "Can not load SSL certificate: "
+        	                        + Exception.message );
+	        // Abort execution.
+	        process.exit();
+	}
 }
 
 // Prepare ExpressJS and https libraries.
 var express = require( 'express' )
-        ,https = require('https')
+        ,https = require( disableSSL ? 'http' : 'https' )
         // Create ExpressJS application.
         ,application = express()
         // Create HTTPS listener.
-        ,httpsServer = https.createServer( {
+        ,httpsServer = disableSSL ? https.createServer( application ) : https.createServer( {
                 cert: sslCertificate
                 ,key: sslKey
         }, application )
@@ -123,7 +128,7 @@ application.put( '/record/', getRecordById.action );
 
 // Bind listener, on default port 443.
 try {
-        httpsServer.listen( 443, "localhost" );
+        httpsServer.listen( disableSSL ? 80 : 443, "localhost" );
 } catch ( Exception ) {
         // Failed binding listener.
         console.log( "Can not bind listener: "
